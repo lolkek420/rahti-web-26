@@ -1,0 +1,7 @@
+@apiUrl = http://localhost:8080
+
+GET {{apiUrl}}/
+
+GET {{apiUrl}}/api/ip
+
+GET {{apiUrl}}/rooms
