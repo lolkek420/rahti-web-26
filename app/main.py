@@ -1,31 +1,37 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
+from pydantic import BaseModel
+from datetime import date
+from db import get_conn, create_schema
 
 app = FastAPI()
 
-origins = ["*"] 
+create_schema()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+class Booking(BaseModel):
+    guest_id: int
+    room_id: int
+    datefrom: date
+    dateto: date
+    info: str
 
-rooms = [
-    {"room_number": 101, "type": "Single", "price": 50, "is_booked": False},
-    {"room_number": 102, "type": "Double", "price": 80, "is_booked": True},
-    {"room_number": 201, "type": "Suite", "price": 150, "is_booked": False}
-]
-
-
-
-@app.get("/api/ip")
-def api_ip(request: Request): 
-    return { "ip": request.client.host }
+@app.get("/")
+def home():
+    return {"msg": "Hotel API is running!"}
 
 @app.get("/rooms")
 def get_rooms():
-    return rooms
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("SELECT * FROM rooms")
+        return cur.fetchall()
+
+@app.post("/bookings")
+def create_booking(booking: Booking):
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute("""
+            INSERT INTO bookings (room_id, guest_id, datefrom, dateto, info)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id, room_id;
+        """, [booking.room_id, booking.guest_id, booking.datefrom, booking.dateto, booking.info])
+        
+        result = cur.fetchone()
+        return {"msg": "Booking created!", "details": result}

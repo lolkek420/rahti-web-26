@@ -1,6 +1,4 @@
 @apiUrl = http://localhost:8080
 
-GET {{apiUrl}}/api/ip
-
-###
 GET {{apiUrl}}/rooms
+Accept: application/json
